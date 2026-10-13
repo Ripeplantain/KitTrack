@@ -24,6 +24,8 @@ const issuances = computed(() =>
   ),
 );
 const summary = computed(() => getCollectionSummary(issuances.value));
+const copied = ref(false);
+const copyFailed = ref(false);
 const rows = computed(() =>
   issuances.value.map((issuance) => ({
     issuance,
@@ -43,6 +45,52 @@ function formatDate(date?: string) {
     month: "long",
     year: "numeric",
   }).format(new Date(`${date}T12:00:00`));
+}
+
+function printChecklist() {
+  if (import.meta.client) window.print();
+}
+
+async function copyChecklist() {
+  if (!import.meta.client || !game.value) return;
+  const text = [
+    `Leopards vs ${game.value.opponent}`,
+    `${formatDate(game.value.date)} · ${game.value.time} · ${game.value.venue}`,
+    "Jersey return checklist",
+    ...rows.value.map(
+      (row) =>
+        `${row.member?.name ?? "Unknown"} — ${row.jersey ? getJerseyLabel(row.jersey) : "No jersey"} — ${row.issuance.status === "returned" ? "Returned" : "Outstanding"}`,
+    ),
+  ].join("\n");
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      throw new Error("Clipboard API unavailable");
+    }
+    copyFailed.value = false;
+    copied.value = true;
+  } catch {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.setAttribute("readonly", "true");
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    const copiedWithFallback = document.execCommand("copy");
+    textarea.remove();
+    copyFailed.value = !copiedWithFallback;
+    copied.value = copiedWithFallback;
+  }
+  window.setTimeout(() => {
+    copied.value = false;
+    copyFailed.value = false;
+  }, 1800);
+}
+
+if (!game.value) {
+  throw createError({ statusCode: 404, statusMessage: "Game not found" });
 }
 </script>
 
@@ -80,8 +128,17 @@ function formatDate(date?: string) {
       </div>
       <button
         class="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white"
+        type="button"
+        @click="printChecklist"
       >
         <ClipboardCheck class="size-4" />Print return checklist
+      </button>
+      <button
+        class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700"
+        type="button"
+        @click="copyChecklist"
+      >
+        {{ copied ? "Copied" : copyFailed ? "Copy failed" : "Copy plain text" }}
       </button>
     </section>
     <section class="grid gap-4 sm:grid-cols-4">

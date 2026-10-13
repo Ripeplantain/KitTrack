@@ -1,8 +1,17 @@
 <script setup lang="ts">
 import { Search, UserRound, UsersRound } from "@lucide/vue";
 
-const { state } = useKitTrack();
+const { state, addMember } = useKitTrack();
 const query = ref("");
+const showAdd = ref(false);
+const form = reactive({
+  name: "",
+  type: "player" as "player" | "coach",
+  role: "Player",
+  position: "",
+  preferredNumber: "",
+});
+const formError = ref("");
 const filteredMembers = computed(() =>
   state.value.members.filter((member) =>
     `${member.name} ${member.role} ${member.position ?? ""}`
@@ -10,6 +19,31 @@ const filteredMembers = computed(() =>
       .includes(query.value.toLowerCase()),
   ),
 );
+
+function submitMember() {
+  if (!form.name.trim() || !form.role.trim()) {
+    formError.value = "Name and role are required.";
+    return;
+  }
+  addMember({
+    name: form.name.trim(),
+    type: form.type,
+    role: form.role.trim(),
+    position: form.position.trim() || undefined,
+    preferredNumber: form.preferredNumber
+      ? Number(form.preferredNumber)
+      : undefined,
+  });
+  showAdd.value = false;
+  Object.assign(form, {
+    name: "",
+    type: "player",
+    role: "Player",
+    position: "",
+    preferredNumber: "",
+  });
+  formError.value = "";
+}
 </script>
 
 <template>
@@ -26,10 +60,77 @@ const filteredMembers = computed(() =>
       </div>
       <button
         class="inline-flex items-center justify-center gap-2 self-start rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white"
+        type="button"
+        @click="showAdd = true"
       >
         <UserRound class="size-4" />Add member
       </button>
     </section>
+    <ActionModal
+      v-if="showAdd"
+      title="Add a roster member"
+      description="Players and coaches can be selected for future games."
+      @close="showAdd = false"
+    >
+      <form class="space-y-4" @submit.prevent="submitMember">
+        <p
+          v-if="formError"
+          class="rounded-xl bg-red-50 p-3 text-sm text-red-700"
+        >
+          {{ formError }}
+        </p>
+        <label class="block text-sm font-medium text-slate-700"
+          >Name<input
+            v-model="form.name"
+            class="form-input"
+            placeholder="Full name"
+        /></label>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <label class="block text-sm font-medium text-slate-700"
+            >Type<select v-model="form.type" class="form-input">
+              <option value="player">Player</option>
+              <option value="coach">Coach</option>
+            </select></label
+          >
+          <label class="block text-sm font-medium text-slate-700"
+            >Role<input
+              v-model="form.role"
+              class="form-input"
+              placeholder="Player or Head Coach"
+          /></label>
+        </div>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <label class="block text-sm font-medium text-slate-700"
+            >Position<input
+              v-model="form.position"
+              class="form-input"
+              placeholder="Optional"
+          /></label>
+          <label class="block text-sm font-medium text-slate-700"
+            >Preferred number<input
+              v-model="form.preferredNumber"
+              type="number"
+              min="0"
+              class="form-input"
+              placeholder="Optional"
+          /></label>
+        </div>
+        <div class="flex justify-end gap-3 pt-2">
+          <button
+            type="button"
+            class="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700"
+            @click="showAdd = false"
+          >
+            Cancel</button
+          ><button
+            type="submit"
+            class="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white"
+          >
+            Add member
+          </button>
+        </div>
+      </form>
+    </ActionModal>
     <div class="grid gap-4 sm:grid-cols-3">
       <div class="rounded-2xl border border-slate-200 bg-white p-5">
         <p class="text-sm text-slate-500">Active players</p>

@@ -94,6 +94,8 @@ function gameStatusTone(status: string) {
       <div class="flex flex-wrap gap-3">
         <button
           class="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
+          type="button"
+          @click="navigateTo('/games?create=1')"
         >
           <CirclePlus class="size-4" />Create game</button
         ><button

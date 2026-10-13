@@ -14,10 +14,19 @@ export function useKitTrack() {
   const hydrated = useState("kittrack-hydrated", () => false);
 
   if (import.meta.client && !hydrated.value) {
-    onMounted(() => {
+    onMounted(async () => {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
-        state.value = JSON.parse(stored) as KitTrackState;
+        try {
+          state.value = JSON.parse(stored) as KitTrackState;
+        } catch {
+          localStorage.removeItem(STORAGE_KEY);
+        }
+      }
+      try {
+        state.value = await $fetch<KitTrackState>("/api/state");
+      } catch {
+        // Production uses the Postgres adapter until the relational API is enabled.
       }
       hydrated.value = true;
     });
@@ -26,6 +35,9 @@ export function useKitTrack() {
   function persist() {
     if (import.meta.client) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state.value));
+      void $fetch("/api/state", { method: "PUT", body: state.value }).catch(
+        () => undefined,
+      );
     }
   }
 
@@ -53,10 +65,63 @@ export function useKitTrack() {
     persist();
   }
 
+  function createGame(
+    input: Omit<
+      KitTrackState["games"][number],
+      "id" | "status" | "participantIds"
+    >,
+  ) {
+    const game = {
+      ...input,
+      id: `game-${Date.now()}`,
+      status: "scheduled" as const,
+      participantIds: [],
+    };
+    state.value = { ...state.value, games: [game, ...state.value.games] };
+    persist();
+    return game;
+  }
+
+  function addMember(
+    input: Omit<KitTrackState["members"][number], "id" | "status">,
+  ) {
+    const member = {
+      ...input,
+      id: `member-${Date.now()}`,
+      status: "active" as const,
+    };
+    state.value = { ...state.value, members: [member, ...state.value.members] };
+    persist();
+    return member;
+  }
+
+  function registerJersey(
+    input: Omit<KitTrackState["jerseys"][number], "id" | "status">,
+  ) {
+    const jersey = {
+      ...input,
+      id: `jersey-${Date.now()}`,
+      status:
+        input.condition && input.condition !== "Good"
+          ? ("unavailable" as const)
+          : ("available" as const),
+    };
+    state.value = { ...state.value, jerseys: [jersey, ...state.value.jerseys] };
+    persist();
+    return jersey;
+  }
+
   function resetDemo() {
     state.value = cloneState(demoState);
     persist();
   }
 
-  return { state, markReturned, resetDemo };
+  return {
+    state,
+    markReturned,
+    createGame,
+    addMember,
+    registerJersey,
+    resetDemo,
+  };
 }

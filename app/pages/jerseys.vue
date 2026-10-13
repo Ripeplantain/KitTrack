@@ -3,15 +3,42 @@ import { Search, Shirt } from "@lucide/vue";
 import StatusPill from "~/components/StatusPill.vue";
 import { getJerseyLabel } from "~/utils/jersey-accounting";
 
-const { state } = useKitTrack();
+const { state, registerJersey } = useKitTrack();
 const query = ref("");
+const showRegister = ref(false);
+const form = reactive({
+  number: "",
+  kitColour: "Black",
+  size: "",
+  condition: "Good",
+});
+const formError = ref("");
 const filteredJerseys = computed(() =>
   state.value.jerseys.filter((jersey) =>
-    `${jersey.number} ${jersey.kitColour} ${jersey.size ?? ""}`
+    `${jersey.number} ${jersey.kitColour} ${jersey.size ?? ""} ${jersey.condition ?? ""}`
       .toLowerCase()
       .includes(query.value.toLowerCase()),
   ),
 );
+
+function submitJersey() {
+  const number = Number(form.number);
+  if (!Number.isInteger(number) || number < 0) {
+    formError.value = "Enter a valid jersey number.";
+    return;
+  }
+  registerJersey({
+    number,
+    kitColour: form.kitColour,
+    size: form.size || undefined,
+    condition: form.condition,
+  });
+  showRegister.value = false;
+  form.number = "";
+  form.size = "";
+  form.condition = "Good";
+  formError.value = "";
+}
 </script>
 
 <template>
@@ -28,10 +55,71 @@ const filteredJerseys = computed(() =>
       </div>
       <button
         class="inline-flex items-center justify-center gap-2 self-start rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white"
+        type="button"
+        @click="showRegister = true"
       >
         <Shirt class="size-4" />Register jersey
       </button>
     </section>
+    <ActionModal
+      v-if="showRegister"
+      title="Register a jersey"
+      description="Numbers may repeat across kit colours; every physical jersey gets its own record."
+      @close="showRegister = false"
+    >
+      <form class="space-y-4" @submit.prevent="submitJersey">
+        <p
+          v-if="formError"
+          class="rounded-xl bg-red-50 p-3 text-sm text-red-700"
+        >
+          {{ formError }}
+        </p>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <label class="block text-sm font-medium text-slate-700"
+            >Number<input
+              v-model="form.number"
+              type="number"
+              min="0"
+              class="form-input"
+          /></label>
+          <label class="block text-sm font-medium text-slate-700"
+            >Kit<select v-model="form.kitColour" class="form-input">
+              <option>Black</option>
+              <option>White</option>
+            </select></label
+          >
+        </div>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <label class="block text-sm font-medium text-slate-700"
+            >Size<input
+              v-model="form.size"
+              class="form-input"
+              placeholder="Optional"
+          /></label>
+          <label class="block text-sm font-medium text-slate-700"
+            >Condition<select v-model="form.condition" class="form-input">
+              <option>Good</option>
+              <option>Awaiting repair</option>
+              <option>Damaged</option>
+            </select></label
+          >
+        </div>
+        <div class="flex justify-end gap-3 pt-2">
+          <button
+            type="button"
+            class="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700"
+            @click="showRegister = false"
+          >
+            Cancel</button
+          ><button
+            type="submit"
+            class="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white"
+          >
+            Register jersey
+          </button>
+        </div>
+      </form>
+    </ActionModal>
     <section class="rounded-2xl border border-slate-200 bg-white">
       <div
         class="flex flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6"

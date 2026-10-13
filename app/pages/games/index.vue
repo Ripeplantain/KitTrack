@@ -2,7 +2,42 @@
 import { ArrowUpRight, CalendarDays, CirclePlus } from "@lucide/vue";
 import StatusPill from "~/components/StatusPill.vue";
 
-const { state } = useKitTrack();
+const { state, createGame } = useKitTrack();
+const route = useRoute();
+const router = useRouter();
+const showCreate = ref(route.query.create === "1");
+const form = reactive({
+  opponent: "",
+  date: new Date().toISOString().slice(0, 10),
+  time: "18:00",
+  venue: "",
+  competition: "",
+  kitColour: "Black",
+});
+const formError = ref("");
+
+watch(
+  () => route.query.create,
+  (create) => {
+    showCreate.value = create === "1";
+  },
+);
+
+function closeCreate() {
+  showCreate.value = false;
+  if (route.query.create) router.replace({ query: {} });
+}
+
+function submitGame() {
+  if (!form.opponent || !form.date || !form.time || !form.venue) {
+    formError.value = "Opponent, date, time, and venue are required.";
+    return;
+  }
+  formError.value = "";
+  const game = createGame({ ...form });
+  closeCreate();
+  router.push(`/games/${game.id}`);
+}
 
 function formatDate(date: string) {
   return new Intl.DateTimeFormat("en-GB", {
@@ -27,10 +62,75 @@ function formatDate(date: string) {
       </div>
       <button
         class="inline-flex items-center justify-center gap-2 self-start rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white"
+        type="button"
+        @click="showCreate = true"
       >
         <CirclePlus class="size-4" />Create game
       </button>
     </section>
+    <ActionModal
+      v-if="showCreate"
+      title="Create a game"
+      description="Set up the fixture before selecting participants and issuing kit."
+      @close="closeCreate"
+    >
+      <form class="space-y-4" @submit.prevent="submitGame">
+        <p
+          v-if="formError"
+          class="rounded-xl bg-red-50 p-3 text-sm text-red-700"
+        >
+          {{ formError }}
+        </p>
+        <label class="block text-sm font-medium text-slate-700"
+          >Opponent<input
+            v-model="form.opponent"
+            class="form-input"
+            placeholder="e.g. Titans"
+        /></label>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <label class="block text-sm font-medium text-slate-700"
+            >Date<input v-model="form.date" type="date" class="form-input"
+          /></label>
+          <label class="block text-sm font-medium text-slate-700"
+            >Time<input v-model="form.time" type="time" class="form-input"
+          /></label>
+        </div>
+        <label class="block text-sm font-medium text-slate-700"
+          >Venue<input
+            v-model="form.venue"
+            class="form-input"
+            placeholder="e.g. Bukom Arena"
+        /></label>
+        <div class="grid gap-4 sm:grid-cols-2">
+          <label class="block text-sm font-medium text-slate-700"
+            >Competition<input
+              v-model="form.competition"
+              class="form-input"
+              placeholder="Optional"
+          /></label>
+          <label class="block text-sm font-medium text-slate-700"
+            >Kit<select v-model="form.kitColour" class="form-input">
+              <option>Black</option>
+              <option>White</option>
+            </select></label
+          >
+        </div>
+        <div class="flex justify-end gap-3 pt-2">
+          <button
+            type="button"
+            class="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700"
+            @click="closeCreate"
+          >
+            Cancel</button
+          ><button
+            type="submit"
+            class="rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white"
+          >
+            Create game
+          </button>
+        </div>
+      </form>
+    </ActionModal>
     <div class="grid gap-4 sm:grid-cols-3">
       <div class="rounded-2xl border border-slate-200 bg-white p-5">
         <p class="text-sm text-slate-500">All games</p>

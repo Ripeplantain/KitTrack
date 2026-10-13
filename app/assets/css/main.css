@@ -120,4 +120,27 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  .form-input {
+    @apply mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-normal text-slate-900 outline-none transition focus:border-slate-400 focus:bg-white;
+  }
+
+  @media print {
+    body {
+      background: white;
+    }
+
+    header,
+    aside,
+    button,
+    nav,
+    a[href="/games"] {
+      display: none !important;
+    }
+
+    main {
+      max-width: none !important;
+      padding: 0 !important;
+    }
+  }
 }
