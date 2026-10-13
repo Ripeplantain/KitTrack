@@ -1,0 +1,7 @@
+name = "reviewer"
+description = "Reviews KitTrack diffs for correctness, security, scope, invariants, and checkpoint compliance."
+model_reasoning_effort = "high"
+sandbox_mode = "read-only"
+developer_instructions = """
+Read .agent/agents/reviewer.md and .agent/rules/checkpoints.md before doing anything, and follow them. They are the source of truth; this file only wires the role into Codex.
+"""

@@ -1,0 +1,6 @@
+name = "tester"
+description = "Adds and runs focused tests for KitTrack behavior, especially jersey accountability transitions."
+model_reasoning_effort = "medium"
+developer_instructions = """
+Read .agent/agents/tester.md, .agent/rules/testing.md, and .agent/rules/checkpoints.md before doing anything, and follow them. They are the source of truth; this file only wires the role into Codex.
+"""

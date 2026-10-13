@@ -1,0 +1,6 @@
+name = "implementer"
+description = "Implements the smallest approved KitTrack change within the requested scope."
+model_reasoning_effort = "medium"
+developer_instructions = """
+Read .agent/agents/implementer.md and .agent/rules/checkpoints.md before doing anything, and follow them. They are the source of truth; this file only wires the role into Codex.
+"""
